@@ -1,12 +1,43 @@
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Scanner;
 
 public class Complexity {
-    public static void main(String[] args) {
-        String s = "uncopyrightable";
-        System.out.println(s + ": " + numberOfMoves(s) + " moves");
+    private static boolean debug = false;
+
+    public static void main(String[] args) throws FileNotFoundException {
+        //debug = true;
+        //test();
+
+        //Scanner scanner = new Scanner(System.in);
+        Scanner scanner = new Scanner(new File("C:\\Users\\cbilson\\Complexity.txt"));
+
+        int problems = scanner.nextInt();
+        scanner.nextLine();
+
+        for (int i = 0; i < problems; i++) {
+            String s = scanner.nextLine();
+            System.out.println(numberOfMoves(s));
+        }
+    }
+
+    private static void test() {
+        String s = "string";
+        log(s + ": " + numberOfMoves(s) + " moves");
+
+        s = "letter";
+        log(s + ": " + numberOfMoves(s) + " moves");
+
+        s = "aaabbb";
+        log(s + ": " + numberOfMoves(s) + " moves");
 
         s = "aaabbbccc";
-        System.out.println(s + ": " + numberOfMoves(s) + " moves");
+        log(s + ": " + numberOfMoves(s) + " moves");
+
+        s = "uncopyrightable";
+        log(s + ": " + numberOfMoves(s) + " moves");
     }
 
     private static int numberOfMoves(String s) {
@@ -15,27 +46,14 @@ public class Complexity {
 
             ArrayList<Character> found = new ArrayList<>();
             ArrayList<Integer> counts = new ArrayList<>();
-            int highestCount = 0;
-            int highestCountIndex = 0;
             for (char c : s.toCharArray()) {
-                int index;
-                int count;
-
                 if (!found.contains(c)) {
-                    index = found.size();
-                    count = 1;
                     found.add(c);
-                    counts.add(count); // initial count for this character
+                    counts.add(1); // initial count for this character
                 } else {
-                    index = found.indexOf(c);
-                    count = counts.get(index) + 1;
+                    int index = found.indexOf(c);
+                    int count = counts.get(index) + 1;
                     counts.set(index, count); // increment count
-                }
-
-                // keep track of the highest count we've seen for a given char
-                if (count > highestCount) {
-                    highestCount = count;
-                    highestCountIndex = index;
                 }
             }
 
@@ -43,11 +61,19 @@ public class Complexity {
             if (found.size() <= 2)
                 return moves;
 
-            // Otherwise, remove the 1st occurrence of the most common char
+            // Otherwise, find the smallest count
             moves++;
-            char mostCommon = found.get(highestCountIndex);
-            s = s.replaceFirst(Character.toString(mostCommon), "");
-            System.out.println("\t" + moves + ": " + s);
+            int smallestCount = Collections.min(counts);
+            int leastCommonIndex = counts.indexOf(smallestCount);
+            char leastCommon = found.get(leastCommonIndex);
+            s = s.replaceFirst(Character.toString(leastCommon), "");
+            log("\t" + moves + ": " + s);
         }
+    }
+
+    private static void log(String s) {
+        if (!debug) return;
+
+        System.out.println(s);
     }
 }
