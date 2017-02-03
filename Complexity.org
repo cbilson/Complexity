@@ -1,0 +1,269 @@
+* Approach
+
+First, we're told we need to be able to calculate complexity.
+
+We're told complexity is the number of distinct characters in a
+string (my interpretation).
+
+Let's try to build that:
+
+#+BEGIN_SRC java
+public class Complexity {
+    public static void main(String[] args) {
+        String s = "string";
+        System.out.println(s + ": " + computeComplexity(s));
+
+        s = "letter";
+        System.out.println(s + ": " + computeComplexity(s));
+    }
+
+    private static int computeComplexity(String s) {
+        ArrayList<Character> found = new ArrayList<Character>();
+        for (char c : s.toCharArray())
+            if (!found.contains(c))
+                found.add(c);
+
+        return found.size();
+    }
+}
+#+END_SRC
+
+Just keep an array list of characters we find in the string,
+accumulating only the distinct ones. Return the size of the array to
+get the score.
+
+* Eraser
+We're told we can delete one letter at a time (all occurrences of
+that character). What's the minimum number of such operations
+to get the score down to 2 or 1.
+
+At first I thought: deleting the most common character first would
+get the most bang for the buck.
+
+Then I realized: no, it doesn't matter which character we delete. As
+long as the operation reduces the total number of distinct characters,
+we've made the same amount of progress.
+
+So why not simply delete the first character, repeating until the
+score is <= 2? ex.:
+
+letter -> etter -> ttr (score: 2, 2 operations)
+
+Time to go back and reread the problem to make sure this fits...
+
+* Base cases?
+Is this really the minimum number of times.
+
+No:
+- 'aa' -> score is already 1 -> 0 moves
+- 'ab' -> score is already 2 -> 0 moves
+
+Let's try it:
+
+#+BEGIN_SRC java
+import java.util.ArrayList;
+
+/**
+ * Created by cbilson on 2/2/2017.
+ */
+public class Complexity {
+    public static void main(String[] args) {
+        String s = "uncopyrightable";
+        System.out.println(s + ": " + numberOfMoves(s) + " moves");
+
+        s = "aaabbbccc";
+        System.out.println(s + ": " + numberOfMoves(s) + " moves");
+    }
+
+    private static int numberOfMoves(String s) {
+        int moves = 0;
+        int complexity = computeComplexity(s);
+        while (complexity > 2) {
+            moves++;
+            s = s.replaceAll(Character.toString(s.charAt(0)), "");
+            System.out.println("\t" + moves + ": " + s);
+            complexity = computeComplexity(s);
+        }
+
+        return moves;
+    }
+
+    private static int computeComplexity(String s) {
+        ArrayList<Character> found = new ArrayList<Character>();
+        for (char c : s.toCharArray())
+            if (!found.contains(c))
+                found.add(c);
+
+        return found.size();
+    }
+}
+
+#+END_SRC
+
+I get:
+uncopyrightable: 13 moves
+aaabbbccc: 1 moves
+
+But they have 3 moves for "aaabbbccc". I think I misunderstood the
+eraser. It must only delete one _character_, not all occurrences of
+that character.
+
+* Take 2
+In this case, it does matter which letter we choose to remove.
+
+If we remove a letter that only occurs once, we reduce the complexity
+of the word by one with a cost of 1:
+
+"letter" -> remove "l" : "etter" -> remove "r" -> "ette" (complexity
+2, cost 2)
+vs.
+"letter" -> remove 1st "t" : "leter" (score still 4) -> remove 2nd
+"t" : "leer" (score now 3) -> "ler" -> "Lr" (total cost 4)
+
+So when scoring we should count frequency and return the least
+frequent letter somehow. We could use a class, but since we're in a
+hurry, let's just combine the two methods.
+
+#+BEGIN_SRC java
+public class Complexity {
+    public static void main(String[] args) {
+        String s = "uncopyrightable";
+        System.out.println(s + ": " + numberOfMoves(s) + " moves");
+
+        s = "aaabbbccc";
+        System.out.println(s + ": " + numberOfMoves(s) + " moves");
+    }
+
+    private static int numberOfMoves(String s) {
+        int moves = 0;
+        while (true) {
+
+            ArrayList<Character> found = new ArrayList<>();
+            ArrayList<Integer> counts = new ArrayList<>();
+            for (char c : s.toCharArray()) {
+                if (!found.contains(c)) {
+                    found.add(c);
+                    counts.add(1); // initial count for this character
+                } else {
+                    int index = found.indexOf(c);
+                    int count = counts.get(index) + 1;
+                    counts.set(index, count); // increment count
+                }
+            }
+
+            // If score <= 2, we're done
+            if (found.size() <= 2)
+                return moves;
+
+            // Otherwise, find the smallest count
+            moves++;
+            int smallestCount = Collections.min(counts);
+            int leastCommonIndex = counts.indexOf(smallestCount);
+            char leastCommon = found.get(leastCommonIndex);
+            s = s.replaceFirst(Character.toString(leastCommon), "");
+            System.out.println("\t" + moves + ": " + s);
+        }
+    }
+}
+
+#+END_SRC
+
+That seems to be working. I run the other test strings they gave and
+verify they all give the right answer.
+
+* Clean up
+Now I need to add the boiler plate that reads the problems from a file
+and prints them out to the console. I also need to remove my
+printlns. 
+
+Since I *might* need to debug this later if they are wrong, I am going
+to put them in a method I can toggle off and on, which I'll include
+with the other boiler plate code in the cheatsheet we talked about.
+
+I'm also going to keep my tests in a separate method I can call if I
+want to.
+
+Final program:
+
+#+BEGIN_SRC java
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Scanner;
+
+public class Complexity {
+    private static boolean debug = false;
+
+    public static void main(String[] args) throws FileNotFoundException {
+        //debug = true;
+        //test();
+
+        //Scanner scanner = new Scanner(System.in);
+        Scanner scanner = new Scanner(new File("C:\\Users\\cbilson\\Complexity.txt"));
+
+        int problems = scanner.nextInt();
+        scanner.nextLine();
+
+        for (int i = 0; i < problems; i++) {
+            String s = scanner.nextLine();
+            System.out.println(numberOfMoves(s));
+        }
+    }
+
+    private static void test() {
+        String s = "string";
+        log(s + ": " + numberOfMoves(s) + " moves");
+
+        s = "letter";
+        log(s + ": " + numberOfMoves(s) + " moves");
+
+        s = "aaabbb";
+        log(s + ": " + numberOfMoves(s) + " moves");
+
+        s = "aaabbbccc";
+        log(s + ": " + numberOfMoves(s) + " moves");
+
+        s = "uncopyrightable";
+        log(s + ": " + numberOfMoves(s) + " moves");
+    }
+
+    private static int numberOfMoves(String s) {
+        int moves = 0;
+        while (true) {
+
+            ArrayList<Character> found = new ArrayList<>();
+            ArrayList<Integer> counts = new ArrayList<>();
+            for (char c : s.toCharArray()) {
+                if (!found.contains(c)) {
+                    found.add(c);
+                    counts.add(1); // initial count for this character
+                } else {
+                    int index = found.indexOf(c);
+                    int count = counts.get(index) + 1;
+                    counts.set(index, count); // increment count
+                }
+            }
+
+            // If score <= 2, we're done
+            if (found.size() <= 2)
+                return moves;
+
+            // Otherwise, find the smallest count
+            moves++;
+            int smallestCount = Collections.min(counts);
+            int leastCommonIndex = counts.indexOf(smallestCount);
+            char leastCommon = found.get(leastCommonIndex);
+            s = s.replaceFirst(Character.toString(leastCommon), "");
+            log("\t" + moves + ": " + s);
+        }
+    }
+
+    private static void log(String s) {
+        if (!debug) return;
+
+        System.out.println(s);
+    }
+}
+
+#+END_SRC
